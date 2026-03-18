@@ -1,6 +1,7 @@
 
 "use client"
 import OrderProductReview from "./OrderProductReview"
+import ProductFeedbackList from "@/components/ProductFeedbackList"
 
 import { useQuery } from "@tanstack/react-query"
 import { useParams } from "next/navigation"
@@ -150,8 +151,11 @@ export default function OrderDetailPage() {
                           </div>
                         </div>
                         {/* Review Form for delivered orders */}
-                        {order.status === "delivered" && item.product?.id && (
-                          <OrderProductReview productId={item.product.id} />
+                        {order.status === "delivered" && item.product?.id && order.id && (
+                          <>
+                            <OrderProductReview productId={item.product.id} orderId={order.id} />
+                            <ProductFeedbackList productId={item.product.id} />
+                          </>
                         )}
                       </div>
                     ))}

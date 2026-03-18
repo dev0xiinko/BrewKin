@@ -1,25 +1,39 @@
 "use client"
 
 import { useState } from "react"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { toast } from "sonner"
 
-export default function OrderProductReview({ productId }: { productId: string }) {
+export default function OrderProductReview({ productId, orderId }: { productId: string, orderId: string }) {
+  if (!orderId) {
+    if (typeof window !== 'undefined') {
+      // eslint-disable-next-line no-console
+      console.warn('OrderProductReview: orderId prop is missing! Feedback will not work.');
+    }
+  }
   const [feedbackText, setFeedbackText] = useState("")
   const [feedbackRating, setFeedbackRating] = useState<number | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
 
   const submitFeedback = async () => {
-    if (!productId || !feedbackText || !feedbackRating) return
+    if (!productId || !orderId || !feedbackText || !feedbackRating) return
     setSubmitting(true)
     try {
+      const supabase = createClient()
+      const { data: { session } } = await supabase.auth.getSession()
+      const accessToken = session?.access_token
       const res = await fetch("/api/feedback", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
         body: JSON.stringify({
           product_id: productId,
+          order_id: orderId,
           feedback: feedbackText,
           rating: feedbackRating,
         }),

@@ -1,4 +1,6 @@
+
 "use client"
+import ProductFeedbackList from "@/components/ProductFeedbackList"
 
 import { useQuery } from "@tanstack/react-query"
 import { useParams, useRouter } from "next/navigation"
@@ -237,6 +239,10 @@ export default function ProductPage() {
             {/* Product Details */}
             <div>
               <h1 className="font-serif text-3xl font-bold">{product.name}</h1>
+              {/* Product Feedbacks */}
+              <div className="my-4">
+                <ProductFeedbackList productId={product.id} />
+              </div>
               {product.description && (
                 <p className="mt-3 text-muted-foreground">{product.description}</p>
               )}

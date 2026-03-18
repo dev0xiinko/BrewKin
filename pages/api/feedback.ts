@@ -1,48 +1,59 @@
 import { NextApiRequest, NextApiResponse } from "next"
 import { createClient } from "@supabase/supabase-js"
+import jwt from "jsonwebtoken"
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" })
   }
-  const { product_id, feedback, rating } = req.body
-  // TODO: Replace with real user id from session/auth
-  const user_id = req.cookies["user_id"] || "anonymous"
-  if (!product_id || !feedback || !rating) {
-    return res.status(400).json({ error: "Missing fields" })
+  const { product_id, order_id, feedback, rating } = req.body
+  // Extract user id from Supabase JWT in Authorization header
+  const authHeader = req.headers["authorization"] || ""
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null
+  let user_id = null
+  if (token) {
+    try {
+      const decoded = jwt.decode(token)
+      user_id = decoded?.sub || null
+    } catch {}
+  }
+  // Validate UUID (simple regex)
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (!product_id || !order_id || !rating || !user_id || !uuidRegex.test(user_id)) {
+    return res.status(400).json({
+      error: "Missing or invalid fields",
+      debug: {
+        product_id,
+        order_id,
+        rating,
+        user_id,
+        user_id_valid: uuidRegex.test(user_id),
+        token: authHeader,
+        body: req.body
+      }
+    })
   }
   try {
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
-    // Check for delivered order containing this product
-    const { data: orders, error: orderError } = await supabase
-      .from("orders")
-      .select("id")
-      .eq("user_id", user_id)
-      .eq("status", "delivered")
-    if (orderError || !orders || orders.length === 0) {
-      return res.status(403).json({ error: "You can only review products you have received in a delivered order." })
-    }
-    const orderIds = orders.map((o) => o.id)
-    const { data: items, error: itemsError } = await supabase
-      .from("order_items")
-      .select("order_id, product_id")
-      .in("order_id", orderIds)
-      .eq("product_id", product_id)
-    if (itemsError || !items || items.length === 0) {
-      return res.status(403).json({ error: "You can only review products you have received in a delivered order." })
-    }
-    const { error } = await supabase.from("product_feedbacks").insert({
+    // Insert feedback (one per user/product/order)
+    const { error: insertError } = await supabase.from("product_feedbacks").insert({
       product_id,
       user_id,
-      feedback,
+      order_id,
+      feedback: feedback || null,
       rating,
     })
-    if (error) throw error
+    if (insertError) {
+      if (insertError.code === "23505") {
+        return res.status(409).json({ error: "You have already submitted feedback for this product in this order." })
+      }
+      return res.status(500).json({ error: "Failed to submit feedback", details: insertError })
+    }
     return res.status(200).json({ success: true })
   } catch (e) {
-    return res.status(500).json({ error: "Failed to submit feedback" })
+    return res.status(500).json({ error: "Failed to submit feedback", details: e })
   }
 }
