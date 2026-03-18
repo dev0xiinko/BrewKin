@@ -53,27 +53,30 @@ export default function OrderProductReview({ productId }: { productId: string })
     <div className="mt-4 border rounded bg-background p-4">
       <h3 className="font-semibold mb-2">Leave a Review</h3>
       <div className="flex items-center gap-2 mb-2">
-        {[1,2,3,4,5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => setFeedbackRating(star)}
-            aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
-            disabled={submitting}
-            style={{
-              color: feedbackRating && feedbackRating >= star ? '#facc15' : '#d1d5db',
-              background: 'none',
-              border: 'none',
-              cursor: submitting ? 'not-allowed' : 'pointer',
-              padding: 0,
-              fontSize: '2rem',
-              lineHeight: 1,
-              transition: 'color 0.2s',
-            }}
-          >
-            ★
-          </button>
-        ))}
+        {[1,2,3,4,5].map((star) => {
+          const isActive = typeof feedbackRating === 'number' && star <= feedbackRating;
+          return (
+            <button
+              key={star}
+              type="button"
+              onClick={() => setFeedbackRating(star)}
+              aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+              disabled={submitting}
+              style={{
+                color: isActive ? '#facc15' : '#d1d5db',
+                background: 'none',
+                border: 'none',
+                cursor: submitting ? 'not-allowed' : 'pointer',
+                padding: 0,
+                fontSize: '2rem',
+                lineHeight: 1,
+                transition: 'color 0.2s',
+              }}
+            >
+              ★
+            </button>
+          );
+        })}
       </div>
       <Textarea
         value={feedbackText}
