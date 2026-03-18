@@ -11,6 +11,7 @@ import { useState } from "react"
 
 export default function MenuPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [search, setSearch] = useState("")
 
   const { data: products, isLoading: productsLoading } = useQuery({
     queryKey: ["products", "available"],
@@ -22,9 +23,13 @@ export default function MenuPage() {
     queryFn: fetchCategories,
   })
 
-  const filteredProducts = selectedCategory
-    ? products?.filter((p) => p.category_id === selectedCategory)
-    : products
+  const filteredProducts = (products || [])
+    .filter((p) =>
+      (!selectedCategory || p.category_id === selectedCategory) &&
+      (search.trim() === "" ||
+        p.name.toLowerCase().includes(search.trim().toLowerCase()) ||
+        (p.description?.toLowerCase().includes(search.trim().toLowerCase()) ?? false))
+    )
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -42,6 +47,16 @@ export default function MenuPage() {
         </div>
 
         <div className="mx-auto max-w-7xl px-6 py-12">
+          {/* Search Bar */}
+          <div className="mb-6 flex justify-center">
+            <input
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search for a drink..."
+              className="w-full max-w-md rounded border border-border px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
           {/* Category Filter */}
           <div className="mb-10 flex flex-wrap gap-3 border-b border-border pb-6">
             <Button
