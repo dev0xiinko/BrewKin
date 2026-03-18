@@ -1,4 +1,3 @@
-
 import { NextApiRequest, NextApiResponse } from "next"
 import { createClient } from "@/lib/supabase/server"
 
