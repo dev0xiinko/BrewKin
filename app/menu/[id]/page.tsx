@@ -20,6 +20,11 @@ import type { Addon } from "@/lib/types"
 import { toast } from "sonner"
 import { formatPHP } from "@/lib/utils"
 
+import { fetchProductFeedbacks } from "@/lib/queries"
+
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useSession } from "next-auth/react"
+
 const SIZES = [
   { value: "small" as const, label: "Small", priceAdd: 0 },
   { value: "medium" as const, label: "Medium", priceAdd: 15 },
@@ -27,6 +32,15 @@ const SIZES = [
 ]
 
 export default function ProductPage() {
+  const queryClient = useQueryClient()
+  // Feedback form state
+  const [feedbackText, setFeedbackText] = useState("")
+  const [feedbackRating, setFeedbackRating] = useState<number | null>(null)
+  const [submittingFeedback, setSubmittingFeedback] = useState(false)
+  // Feedback pagination state
+  const [feedbackPage, setFeedbackPage] = useState(1)
+  const pageSize = 3
+
   const params = useParams()
   const router = useRouter()
   const { addItem } = useCart()
@@ -40,6 +54,39 @@ export default function ProductPage() {
     queryFn: () => fetchProduct(params.id as string),
     enabled: !!params.id,
   })
+
+  // Fetch product feedbacks
+  const { data: feedbackData, isLoading: feedbackLoading } = useQuery({
+    queryKey: ["product-feedbacks", params.id, feedbackPage],
+    queryFn: () => fetchProductFeedbacks(params.id as string, feedbackPage, pageSize),
+    enabled: !!params.id,
+  })
+
+  // Submit feedback mutation
+  const submitFeedback = async () => {
+    if (!params.id || !feedbackText || !feedbackRating) return
+    setSubmittingFeedback(true)
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_id: params.id,
+          feedback: feedbackText,
+          rating: feedbackRating,
+        }),
+      })
+      if (!res.ok) throw new Error("Failed to submit feedback")
+      setFeedbackText("")
+      setFeedbackRating(null)
+      queryClient.invalidateQueries(["product-feedbacks", params.id])
+      toast.success("Feedback submitted!")
+    } catch (e) {
+      toast.error("Could not submit feedback")
+    } finally {
+      setSubmittingFeedback(false)
+    }
+  }
 
   const { data: addons, isLoading: addonsLoading } = useQuery({
     queryKey: ["addons", "available"],
@@ -238,6 +285,73 @@ export default function ProductPage() {
                   <ShoppingCart className="h-5 w-5" />
                   Add to Cart - {formatPHP(calculateTotal())}
                 </Button>
+              </div>
+
+              {/* Product Feedbacks */}
+              <div className="mt-10">
+                {/* Feedback Form */}
+                <div className="mb-8 border rounded bg-background p-4">
+                  <h3 className="font-semibold mb-2">Leave a Review</h3>
+                  <div className="flex items-center gap-2 mb-2">
+                    {[1,2,3,4,5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        className={`text-2xl ${feedbackRating && feedbackRating >= star ? "text-yellow-500" : "text-gray-300"}`}
+                        onClick={() => setFeedbackRating(star)}
+                        aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                        disabled={submittingFeedback}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <Textarea
+                    value={feedbackText}
+                    onChange={e => setFeedbackText(e.target.value)}
+                    placeholder="Share your experience..."
+                    rows={3}
+                    className="mb-2"
+                    disabled={submittingFeedback}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={submitFeedback}
+                    disabled={submittingFeedback || !feedbackText || !feedbackRating}
+                  >
+                    {submittingFeedback ? "Submitting..." : "Submit Review"}
+                  </Button>
+                </div>
+                <h2 className="text-lg font-semibold mb-4">Customer Feedback</h2>
+                {feedbackLoading ? (
+                  <div>Loading feedback...</div>
+                ) : feedbackData && feedbackData.feedbacks.length > 0 ? (
+                  <div className="space-y-4">
+                    {feedbackData.feedbacks.map((fb) => (
+                      <div key={fb.id} className="rounded border p-4 bg-muted">
+                        <div className="flex items-center gap-2 mb-1">
+                          {fb.rating ? (
+                            <span className="text-yellow-500 font-bold">
+                              {Array.from({ length: 5 }).map((_, i) => (
+                                <span key={i}>{i < fb.rating ? "★" : "☆"}</span>
+                              ))}
+                            </span>
+                          ) : null}
+                          <span className="text-xs text-muted-foreground ml-2">{new Date(fb.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="text-base">{fb.feedback}</div>
+                      </div>
+                    ))}
+                    {/* Pagination */}
+                    <div className="flex justify-between items-center mt-4">
+                      <Button variant="outline" size="sm" disabled={feedbackPage === 1} onClick={() => setFeedbackPage((p) => Math.max(1, p - 1))}>Previous</Button>
+                      <span className="text-sm">Page {feedbackPage}</span>
+                      <Button variant="outline" size="sm" disabled={feedbackData.total <= feedbackPage * pageSize} onClick={() => setFeedbackPage((p) => p + 1)}>Next</Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground">No feedback yet.</div>
+                )}
               </div>
             </div>
           </div>

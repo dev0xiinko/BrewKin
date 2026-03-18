@@ -8,7 +8,10 @@ import Link from "next/link"
 import Image from "next/image"
 import type { Product } from "@/lib/types"
 
+import { fetchAverageReviewRating } from "@/lib/queries"
+
 export default async function HomePage() {
+
   const supabase = await createClient()
   const { data: featuredProducts } = await supabase
     .from("products")
@@ -16,6 +19,16 @@ export default async function HomePage() {
     .eq("is_available", true)
     .gt("stock_quantity", 0)
     .limit(4)
+
+  // Fetch average review rating
+  let averageRating: number | null = null
+  try {
+    // SSR: import directly from queries
+    const mod = await import("@/lib/queries")
+    averageRating = await mod.fetchAverageReviewRating()
+  } catch (e) {
+    averageRating = null
+  }
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -121,6 +134,23 @@ export default async function HomePage() {
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* Star Reviews Section (moved below featured products) */}
+        <section className="bg-white py-6 border-b border-border">
+          <div className="mx-auto max-w-7xl px-6 flex items-center gap-4">
+            <span className="text-lg font-semibold">Customer Reviews</span>
+            {averageRating !== null ? (
+              <span className="flex items-center gap-1 text-yellow-500 font-bold">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i}>{i < Math.round(averageRating) ? "★" : "☆"}</span>
+                ))}
+                <span className="ml-2 text-base text-muted-foreground">{averageRating.toFixed(1)} / 5</span>
+              </span>
+            ) : (
+              <span className="text-muted-foreground">No reviews yet</span>
+            )}
           </div>
         </section>
 

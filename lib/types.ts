@@ -100,3 +100,22 @@ export interface Profile {
   created_at: string
   updated_at: string
 }
+
+// Star review for landing page
+export interface Review {
+  id: number
+  user_id: string
+  rating: number // 1-5
+  comment?: string | null
+  created_at: string
+}
+
+// Feedback per product
+export interface ProductFeedback {
+  id: number
+  product_id: string
+  user_id: string
+  feedback: string
+  rating?: number | null // 1-5, optional
+  created_at: string
+}
