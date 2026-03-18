@@ -122,29 +122,35 @@ export default function OrderDetailPage() {
                       price: number
                       size: string
                       notes: string | null
-                      product: { name: string } | null
+                      product: { id: string, name: string } | null
                       addons: Array<{ addon: { name: string } | null; price: number }>
                     }>)?.map((item) => (
-                      <div key={item.id} className="flex justify-between border-b border-border pb-4 last:border-0 last:pb-0">
-                        <div>
-                          <h4 className="font-medium">
-                            {item.quantity}x {item.product?.name || "Unknown Product"}
-                          </h4>
-                          <p className="text-sm text-muted-foreground capitalize">{item.size}</p>
-                          {item.addons && item.addons.length > 0 && (
-                            <p className="text-sm text-muted-foreground">
-                              + {item.addons.map((a) => a.addon?.name).filter(Boolean).join(", ")}
+                      <div key={item.id} className="flex flex-col border-b border-border pb-4 last:border-0 last:pb-0">
+                        <div className="flex justify-between">
+                          <div>
+                            <h4 className="font-medium">
+                              {item.quantity}x {item.product?.name || "Unknown Product"}
+                            </h4>
+                            <p className="text-sm text-muted-foreground capitalize">{item.size}</p>
+                            {item.addons && item.addons.length > 0 && (
+                              <p className="text-sm text-muted-foreground">
+                                + {item.addons.map((a) => a.addon?.name).filter(Boolean).join(", ")}
+                              </p>
+                            )}
+                            {item.notes && (
+                              <p className="text-sm text-muted-foreground italic">Note: {item.notes}</p>
+                            )}
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">
+                              {formatPHP((item.price + (item.addons?.reduce((sum, a) => sum + a.price, 0) || 0)) * item.quantity)}
                             </p>
-                          )}
-                          {item.notes && (
-                            <p className="text-sm text-muted-foreground italic">Note: {item.notes}</p>
-                          )}
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <p className="font-medium">
-                            {formatPHP((item.price + (item.addons?.reduce((sum, a) => sum + a.price, 0) || 0)) * item.quantity)}
-                          </p>
-                        </div>
+                        {/* Review Form for delivered orders */}
+                        {order.status === "delivered" && item.product?.id && (
+                          <OrderProductReview productId={item.product.id} />
+                        )}
                       </div>
                     ))}
                   </div>

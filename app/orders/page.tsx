@@ -116,7 +116,11 @@ export default function OrdersPage() {
                             minute: "2-digit",
                           })}
                         </p>
-                        <p className="mt-2 font-medium">{formatPHP(order.total_amount)}</p>
+                        <p className="mt-2 font-medium">{
+                          typeof order.total_amount === "number" && !isNaN(order.total_amount)
+                            ? formatPHP(order.total_amount)
+                            : "₱0.00"
+                        }</p>
                       </div>
                       <Link href={`/orders/${order.id}`}>
                         <Button variant="outline" className="gap-2">

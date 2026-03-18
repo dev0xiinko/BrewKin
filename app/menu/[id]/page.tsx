@@ -23,7 +23,7 @@ import { formatPHP } from "@/lib/utils"
 import { fetchProductFeedbacks } from "@/lib/queries"
 
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useSession } from "next-auth/react"
+import { useEffect } from "react"
 
 const SIZES = [
   { value: "small" as const, label: "Small", priceAdd: 0 },
@@ -31,12 +31,16 @@ const SIZES = [
   { value: "large" as const, label: "Large", priceAdd: 30 },
 ]
 
+import { createClient } from "@/lib/supabase/client"
+
 export default function ProductPage() {
   const queryClient = useQueryClient()
   // Feedback form state
   const [feedbackText, setFeedbackText] = useState("")
   const [feedbackRating, setFeedbackRating] = useState<number | null>(null)
   const [submittingFeedback, setSubmittingFeedback] = useState(false)
+  const [canReview, setCanReview] = useState(false)
+  const [checkingEligibility, setCheckingEligibility] = useState(true)
   // Feedback pagination state
   const [feedbackPage, setFeedbackPage] = useState(1)
   const pageSize = 3
@@ -48,6 +52,41 @@ export default function ProductPage() {
   const [selectedSize, setSelectedSize] = useState<"small" | "medium" | "large">("medium")
   const [selectedAddons, setSelectedAddons] = useState<Addon[]>([])
   const [notes, setNotes] = useState("")
+
+  // Check if user can review (has delivered order for this product)
+  useEffect(() => {
+    async function checkEligibility() {
+      setCheckingEligibility(true)
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        setCanReview(false)
+        setCheckingEligibility(false)
+        return
+      }
+      // Find delivered orders for this user containing this product
+      const { data: orders, error } = await supabase
+        .from("orders")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("status", "delivered")
+      if (error || !orders || orders.length === 0) {
+        setCanReview(false)
+        setCheckingEligibility(false)
+        return
+      }
+      // Check if any order contains this product
+      const orderIds = orders.map((o: any) => o.id)
+      const { data: items, error: itemsError } = await supabase
+        .from("order_items")
+        .select("order_id, product_id")
+        .in("order_id", orderIds)
+        .eq("product_id", params.id)
+      setCanReview(items && items.length > 0)
+      setCheckingEligibility(false)
+    }
+    if (params.id) checkEligibility()
+  }, [params.id])
 
   const { data: product, isLoading: productLoading } = useQuery({
     queryKey: ["product", params.id],
@@ -76,7 +115,15 @@ export default function ProductPage() {
           rating: feedbackRating,
         }),
       })
-      if (!res.ok) throw new Error("Failed to submit feedback")
+      if (!res.ok) {
+        let msg = "Could not submit feedback"
+        try {
+          const data = await res.json()
+          if (data && data.error) msg = data.error
+        } catch {}
+        toast.error(msg)
+        return
+      }
       setFeedbackText("")
       setFeedbackRating(null)
       queryClient.invalidateQueries(["product-feedbacks", params.id])
@@ -287,72 +334,6 @@ export default function ProductPage() {
                 </Button>
               </div>
 
-              {/* Product Feedbacks */}
-              <div className="mt-10">
-                {/* Feedback Form */}
-                <div className="mb-8 border rounded bg-background p-4">
-                  <h3 className="font-semibold mb-2">Leave a Review</h3>
-                  <div className="flex items-center gap-2 mb-2">
-                    {[1,2,3,4,5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        className={`text-2xl ${feedbackRating && feedbackRating >= star ? "text-yellow-500" : "text-gray-300"}`}
-                        onClick={() => setFeedbackRating(star)}
-                        aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
-                        disabled={submittingFeedback}
-                      >
-                        ★
-                      </button>
-                    ))}
-                  </div>
-                  <Textarea
-                    value={feedbackText}
-                    onChange={e => setFeedbackText(e.target.value)}
-                    placeholder="Share your experience..."
-                    rows={3}
-                    className="mb-2"
-                    disabled={submittingFeedback}
-                  />
-                  <Button
-                    size="sm"
-                    onClick={submitFeedback}
-                    disabled={submittingFeedback || !feedbackText || !feedbackRating}
-                  >
-                    {submittingFeedback ? "Submitting..." : "Submit Review"}
-                  </Button>
-                </div>
-                <h2 className="text-lg font-semibold mb-4">Customer Feedback</h2>
-                {feedbackLoading ? (
-                  <div>Loading feedback...</div>
-                ) : feedbackData && feedbackData.feedbacks.length > 0 ? (
-                  <div className="space-y-4">
-                    {feedbackData.feedbacks.map((fb) => (
-                      <div key={fb.id} className="rounded border p-4 bg-muted">
-                        <div className="flex items-center gap-2 mb-1">
-                          {fb.rating ? (
-                            <span className="text-yellow-500 font-bold">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <span key={i}>{i < fb.rating ? "★" : "☆"}</span>
-                              ))}
-                            </span>
-                          ) : null}
-                          <span className="text-xs text-muted-foreground ml-2">{new Date(fb.created_at).toLocaleDateString()}</span>
-                        </div>
-                        <div className="text-base">{fb.feedback}</div>
-                      </div>
-                    ))}
-                    {/* Pagination */}
-                    <div className="flex justify-between items-center mt-4">
-                      <Button variant="outline" size="sm" disabled={feedbackPage === 1} onClick={() => setFeedbackPage((p) => Math.max(1, p - 1))}>Previous</Button>
-                      <span className="text-sm">Page {feedbackPage}</span>
-                      <Button variant="outline" size="sm" disabled={feedbackData.total <= feedbackPage * pageSize} onClick={() => setFeedbackPage((p) => p + 1)}>Next</Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-muted-foreground">No feedback yet.</div>
-                )}
-              </div>
             </div>
           </div>
         </div>
