@@ -57,10 +57,19 @@ export default function OrderProductReview({ productId }: { productId: string })
           <button
             key={star}
             type="button"
-            className={`text-2xl ${feedbackRating && feedbackRating >= star ? "text-yellow-500" : "text-gray-300"}`}
             onClick={() => setFeedbackRating(star)}
             aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
             disabled={submitting}
+            style={{
+              color: feedbackRating && feedbackRating >= star ? '#facc15' : '#d1d5db',
+              background: 'none',
+              border: 'none',
+              cursor: submitting ? 'not-allowed' : 'pointer',
+              padding: 0,
+              fontSize: '2rem',
+              lineHeight: 1,
+              transition: 'color 0.2s',
+            }}
           >
             ★
           </button>
