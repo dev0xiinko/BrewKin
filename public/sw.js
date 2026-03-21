@@ -124,3 +124,62 @@ self.addEventListener("message", (event) => {
     self.skipWaiting()
   }
 })
+
+// Handle push notifications
+self.addEventListener("push", (event) => {
+  if (!event.data) return
+
+  try {
+    const data = event.data.json()
+    const options = {
+      body: data.body || "Your order has been updated",
+      icon: "/images/brewkin-logo.png",
+      badge: "/images/brewkin-logo.png",
+      tag: data.orderId || "order-notification",
+      requireInteraction: false,
+      actions: [
+        {
+          action: "open",
+          title: "View Order",
+        },
+      ],
+      data: {
+        orderId: data.orderId,
+        url: data.url || "/orders",
+      },
+    }
+
+    event.waitUntil(
+      self.registration.showNotification(data.title || "CJ BrewKin Coffee", options)
+    )
+  } catch (error) {
+    console.error("Error handling push notification:", error)
+  }
+})
+
+// Handle notification clicks
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close()
+
+  const url = event.notification.data.url || "/orders"
+  const orderId = event.notification.data.orderId
+
+  // If order ID exists, navigate to that specific order
+  const targetUrl = orderId ? `/orders/${orderId}` : url
+
+  event.waitUntil(
+    clients.matchAll({ type: "window" }).then((clientList) => {
+      // Check if window/tab with target URL is already open
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i]
+        if (client.url === targetUrl && "focus" in client) {
+          return client.focus()
+        }
+      }
+      // If not, open a new window/tab with the target URL
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl)
+      }
+    })
+  )
+})

@@ -5,6 +5,7 @@ import { useState } from "react"
 import { CartProvider } from "@/lib/cart-context"
 import { OfflineProvider } from "@/lib/offline-context"
 import { OfflineIndicator } from "@/components/offline-indicator"
+import { PWAInstallPrompt } from "@/components/pwa-install-prompt"
 import { Toaster } from "sonner"
 
 export function Providers({ children }: { children: React.ReactNode }) {
@@ -27,6 +28,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <CartProvider>
           {children}
           <OfflineIndicator />
+          <PWAInstallPrompt />
           <Toaster position="top-right" richColors />
         </CartProvider>
       </OfflineProvider>

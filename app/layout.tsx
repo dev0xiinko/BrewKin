@@ -19,6 +19,11 @@ export const metadata: Metadata = {
   description: 'Order premium artisan coffee from CJ BrewKin Coffee. Fresh roasted beans, handcrafted drinks, and fast delivery to your door.',
   generator: 'v0.app',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/images/brewkin-logo.png',
+    apple: '/images/brewkin-logo.png',
+    shortcut: '/images/brewkin-logo.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',

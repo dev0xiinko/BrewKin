@@ -10,10 +10,10 @@ export function StoreFooter() {
             <div className="flex items-center gap-3">
               <div className="relative h-10 w-10 overflow-hidden">
                 <Image
-                  src="/images/hero-cover.png"
+                  src="/images/brewkin-logo.png"
                   alt="CJ BrewKin"
                   fill
-                  className="object-cover"
+                  className="object-contain"
                 />
               </div>
               <div className="flex flex-col">
