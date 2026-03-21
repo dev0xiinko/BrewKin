@@ -25,7 +25,7 @@ export function StoreHeader() {
     <header className="sticky top-0 z-50 w-full bg-primary shadow-md">
       <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6">
         <Link href="/" className="flex items-center gap-3">
-          <div className="relative h-12 w-12 overflow-hidden">
+          <div className="relative h-16 w-16 overflow-hidden">
             <Image
               src="/images/brewkin-logo.png"
               alt="CJ BrewKin"

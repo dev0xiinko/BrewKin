@@ -8,7 +8,7 @@ export function StoreFooter() {
         <div className="grid gap-12 md:grid-cols-4">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="relative h-10 w-10 overflow-hidden">
+              <div className="relative h-14 w-14 overflow-hidden">
                 <Image
                   src="/images/brewkin-logo.png"
                   alt="CJ BrewKin"
