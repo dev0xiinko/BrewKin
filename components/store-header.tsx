@@ -46,6 +46,9 @@ export function StoreHeader() {
           <Link href="/menu" className="text-sm font-semibold uppercase tracking-wider text-primary-foreground/80 transition-colors hover:text-primary-foreground">
             Menu
           </Link>
+          <Link href="/about" className="text-sm font-semibold uppercase tracking-wider text-primary-foreground/80 transition-colors hover:text-primary-foreground">
+            About
+          </Link>
           <Link href="/orders" className="text-sm font-semibold uppercase tracking-wider text-primary-foreground/80 transition-colors hover:text-primary-foreground">
             Orders
           </Link>
@@ -112,6 +115,13 @@ export function StoreHeader() {
               onClick={() => setIsMenuOpen(false)}
             >
               Menu
+            </Link>
+            <Link
+              href="/about"
+              className="text-sm font-semibold uppercase tracking-wider text-primary-foreground/80 transition-colors hover:text-primary-foreground"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              About
             </Link>
             <Link
               href="/orders"

@@ -35,6 +35,11 @@ export function StoreFooter() {
                 </Link>
               </li>
               <li>
+                <Link href="/about" className="transition-colors hover:text-primary-foreground">
+                  About Us
+                </Link>
+              </li>
+              <li>
                 <Link href="/orders" className="transition-colors hover:text-primary-foreground">
                   Track Order
                 </Link>
@@ -50,9 +55,8 @@ export function StoreFooter() {
           <div>
             <h4 className="mb-6 text-xs font-bold uppercase tracking-[0.2em]">Contact</h4>
             <ul className="space-y-3 text-sm text-primary-foreground/70">
-              <li>123 Coffee Street</li>
-              <li>Makati City, Metro Manila</li>
-              <li>hello@cjbrewkin.com</li>
+              <li>Cebu City, Cebu, Philippines</li>
+              <li>cjbrewkin@gmail.com</li>
               <li>+63 917 123 4567</li>
             </ul>
           </div>
